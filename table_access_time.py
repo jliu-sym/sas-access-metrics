@@ -1,45 +1,48 @@
 import pandas as pd
 
 def compute_transition_deltas(transitions_csv, output_csv='transition_deltas.csv'):
-    # Load the parsed transitions file
-    df = pd.read_csv(transitions_csv, parse_dates=[
-        'OPEN to REQUESTED',
-        'REQUESTED to CLOSED',
-        'CLOSED_EMPTY to ACCESS_GRANTED_EMPTY',
-        'REQUESTED to ACCESS_GRANTED_EMPTY', 'CLOSED to ACCESS_GRANTED_EMPTY', # These are illegal transitions?
-        'PREPARING to SAFE_ACCESS_GRANTED',
-        'CLOSED to PREPARING'
-    ])
+    df = pd.read_csv(transitions_csv, parse_dates=True)
+
+    # Parse all columns that look like datetimes
+    for col in df.columns:
+        if col not in ['Location']:
+            try:
+                df[col] = pd.to_datetime(df[col])
+            except Exception:
+                pass
 
     output_rows = []
     for idx, row in df.iterrows():
         location = row['Location']
-        t_request = row['OPEN to REQUESTED']
+        if location.startswith("Level"):
+            t_request = row.get('Cycle Start', None)  # Start from Cycle Start for Level
+            t_localized_bots = row.get('CLOSED to PREPARING', None)
+            t_safe_access = row.get('PREPARING to SAFE_ACCESS_GRANTED', None)
 
-        # 1. Time from request to gate closed
-        t_closed = row['REQUESTED to CLOSED']
-        delta_closed = (t_closed - t_request).total_seconds() if pd.notnull(t_closed) else None
+            delta_closed = None if pd.notnull(t_request) else None
+            delta_localized_bots = (t_localized_bots - t_request).total_seconds() if pd.notnull(t_localized_bots) and pd.notnull(t_request) else None
+            delta_safe_access = (t_safe_access - t_request).total_seconds() if pd.notnull(t_safe_access) and pd.notnull(t_request) else None
+            delta_access_empty = None  # not meaningful for Level
 
-        # 2. Time from request till access granted empty
-        t_access_empty = row['CLOSED_EMPTY to ACCESS_GRANTED_EMPTY']
-        delta_access_empty = (t_access_empty - t_request).total_seconds() if pd.notnull(t_access_empty) else None
+        else:
+            t_request = row.get('Cycle Start', None)  # Use Cycle Start for Driveway/Aisle for consistency
+            t_closed = row.get('REQUESTED to CLOSED', None)
+            t_access_empty = row.get('CLOSED_EMPTY to ACCESS_GRANTED_EMPTY', None)
+            t_localized_bots = row.get('CLOSED to PREPARING', None)
+            t_safe_access = row.get('PREPARING to SAFE_ACCESS_GRANTED', None)
 
-        # 3. Time from request till bots are localized
-        t_localized_bots = row['CLOSED to PREPARING']
-        delta_localized_bots = (t_localized_bots - t_request).total_seconds() if pd.notnull(t_localized_bots) else None
+            delta_closed = (t_closed - t_request).total_seconds() if pd.notnull(t_closed) and pd.notnull(t_request) else None
+            delta_access_empty = (t_access_empty - t_request).total_seconds() if pd.notnull(t_access_empty) and pd.notnull(t_request) else None
+            delta_localized_bots = (t_localized_bots - t_request).total_seconds() if pd.notnull(t_localized_bots) and pd.notnull(t_request) else None
+            delta_safe_access = (t_safe_access - t_request).total_seconds() if pd.notnull(t_safe_access) and pd.notnull(t_request) else None
 
-        # 4. Time from request till safe access granted
-        t_safe_access = row['PREPARING to SAFE_ACCESS_GRANTED']
-        delta_safe_access = (t_safe_access - t_request).total_seconds() if pd.notnull(t_safe_access) else None
-
-        # Date/Hour/Minute for request start
-        request_start_short = t_request.strftime('%Y-%m-%d %H:%M') if pd.notnull(t_request) else None
+        request_start_short = pd.to_datetime(t_request).strftime('%Y-%m-%d %H:%M') if pd.notnull(t_request) else None
 
         output_rows.append({
             'Location': location,
-            'Request Start (YYYY-MM-DD HH:MM)': request_start_short,       
+            'Request Start (YYYY-MM-DD HH:MM)': request_start_short,
             'Time from Request to Gate Closed (s)': delta_closed,
-            'Time from Request to Bots Localized (s)': delta_localized_bots,
+            'Time from Request to Localizatoin Complete (s)': delta_localized_bots,
             'Time from Request to Safe Access Granted (s)': delta_safe_access,
             'Time from Request to Access Granted via "empty button" (s)': delta_access_empty
         })
@@ -47,4 +50,3 @@ def compute_transition_deltas(transitions_csv, output_csv='transition_deltas.csv
     output_df = pd.DataFrame(output_rows)
     output_df.to_csv(output_csv, index=False)
     return output_csv
-    print(output_df)
