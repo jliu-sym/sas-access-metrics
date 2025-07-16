@@ -1,0 +1,16 @@
+# Ignore everything...
+*
+
+# ...except python and shell scripts
+!*.py
+!*.sh
+!*.bash
+!*.zsh
+!*.bat
+
+# ...except folders (keep folders and their contents, unless otherwise ignored)
+!*/
+
+# Optional: explicitly allow README and .gitignore itself (remove if not needed)
+!.gitignore
+!README.md
