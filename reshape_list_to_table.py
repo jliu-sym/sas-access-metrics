@@ -11,7 +11,9 @@ def reshape_log_to_table(filtered_csv, output_csv='parsed_transitions.csv'):
 
     log_pattern = re.compile(
         r'"(?P<timestamp>[\d\-:T\.]+[+-]\d{2}:\d{2}) .*?'
-        r'Driveway (?P<driveway>\d+), Zone (?P<zone>\d+), Cell (?P<cell>\d+) transitioned from (?P<from_state>\w+) to (?P<to_state>[\w_]+)"'
+        r'((Driveway (?P<driveway>\d+), Zone (?P<zone>\d+), Cell (?P<cell>\d+))'
+        r'|(Aisle (?P<aisle>\d+), Zone (?P<azone>\d+))) '
+        r'transitioned from (?P<from_state>\w+) to (?P<to_state>[\w_]+)"'
     )
 
     entries = []
@@ -19,7 +21,12 @@ def reshape_log_to_table(filtered_csv, output_csv='parsed_transitions.csv'):
         m = log_pattern.search(line)
         if m:
             timestamp = m.group('timestamp')
-            location = f"Driveway {m.group('driveway')}, Zone {m.group('zone')}, Cell {m.group('cell')}"
+            if m.group('driveway'):
+                location = f"Driveway {m.group('driveway')}, Zone {m.group('zone')}, Cell {m.group('cell')}"
+            elif m.group('aisle'):
+                location = f"Aisle {m.group('aisle')}, Zone {m.group('azone')}"
+            else:
+                continue
             from_state = m.group('from_state')
             to_state = m.group('to_state')
             transition = f"{from_state} to {to_state}"
@@ -35,6 +42,7 @@ def reshape_log_to_table(filtered_csv, output_csv='parsed_transitions.csv'):
     # --- Main logic: Per-cycle search ---
 
     transitions_of_interest = [
+        # Driveway transitions
         "ACCESS_GRANTED_EMPTY to GATE_CLOSED",
         "ACCESS_GRANTED_EMPTY to OPEN",
         "ACCESS_GRANTED_EMPTY to REQUESTED",
@@ -56,7 +64,23 @@ def reshape_log_to_table(filtered_csv, output_csv='parsed_transitions.csv'):
         "REQUESTED to CLOSED",
         "REQUESTED to CLOSED_EMPTY",
         "REQUESTED to OPEN",
-        "SAFE_ACCESS_GRANTED to OPEN"
+        "SAFE_ACCESS_GRANTED to OPEN",
+
+        # Aisle transitions (additional transitions)
+        "SAFE_ACCESS_GRANTED to REQUESTED",
+        "REQUESTED to OPEN",
+        "SAFE_ACCESS_GRANTED to GATE_CLOSED",
+        "GATE_CLOSED to OPEN",
+        "OPEN to CLOSED",
+        "CLOSED to SAFE_ACCESS_GRANTED",
+        "PREPARING to OPEN",
+        "CLOSED to OPEN",
+        "PREPARING to GATE_CLOSED",
+        "PREPARING to REQUESTED",
+        "CLOSED to GATE_CLOSED",
+        "CLOSED to REQUESTED"        
+
+        # Not all transitions are shown on the state machine diagram
     ]
 
     output_rows = []

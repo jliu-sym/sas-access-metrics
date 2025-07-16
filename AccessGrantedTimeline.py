@@ -38,6 +38,7 @@ def plot_access_granted_timeline(transitions_csv, png_out):
     plt.xlabel('Seconds')
     plt.title('Time to Safe Access Granted (Stacked per Transition)')
     plt.legend(loc='upper right')
+    plt.tick_params(axis='x', labelsize=10)
     plt.tight_layout()
     plt.savefig(png_out)
     plt.show()

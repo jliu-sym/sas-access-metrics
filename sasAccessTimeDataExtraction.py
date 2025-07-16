@@ -11,7 +11,10 @@ def extract_and_filter_logs(log_files, output_csv='filtered_log_transitionStates
         "LockedSetSafeAccessState"
     ]
     exclude_phrases = [
-        "Level", "Aisle", "bot id requested", "requested to renew lease",
+        # "Driveway",
+        "Level", 
+        # "Aisle", 
+        "bot id requested", "requested to renew lease",
         "Accountant requested codeplate", "Vendor-Class-ID requested", "Options requested",
         "SafetyTimeManager", "_botLift_", "Botlift", "Unsafe level", "Unsafe cell"
     ]

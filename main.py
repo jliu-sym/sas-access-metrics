@@ -32,6 +32,15 @@ def run_combined_pipeline(filtered_csv, base='all_logs'):
     plot_access_granted_timeline(transitions_csv, png_out=timeline_png)
 
 if __name__ == "__main__":
-    logfiles = ['scpu.log', 'scpu-20250710.log']
+    logfiles = [
+                'scpu.log',
+                'scpu-20250710.log'
+                ]
+    # Prepend 'raw logs/' to each filename
+    logfiles = [os.path.join('raw logs', f) for f in logfiles]
+
     filtered_csv = extract_and_filter_logs(logfiles, output_csv='all_logs_filtered.csv')
+
+    filtered_csv = 'all_logs_filtered.csv'
+
     run_combined_pipeline(filtered_csv, base='all_logs')
