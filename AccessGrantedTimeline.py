@@ -3,42 +3,45 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 def plot_access_granted_timeline(transitions_csv, png_out):
+    # Load CSV
+    df = pd.read_csv(transitions_csv)
 
-    # Load data
-    df = pd.read_csv(transitions_csv, parse_dates=[
-        'OPEN to REQUESTED',
-        'REQUESTED to CLOSED',
-        'CLOSED to PREPARING',
-        'PREPARING to SAFE_ACCESS_GRANTED'
-    ])
+    # Parse all relevant columns as datetime
+    for col in ['OPEN to REQUESTED', 'REQUESTED to CLOSED', 'CLOSED to PREPARING', 'PREPARING to SAFE_ACCESS_GRANTED']:
+        df[col] = pd.to_datetime(df[col], errors='coerce')
 
-    # Filter for cycles where PREPARING to SAFE_ACCESS_GRANTED exists
-    valid_cycles = df[~df['PREPARING to SAFE_ACCESS_GRANTED'].isna()].copy()
+    # Drop rows with any NaN in required transitions
+    required_cols = ['OPEN to REQUESTED', 'REQUESTED to CLOSED', 'CLOSED to PREPARING', 'PREPARING to SAFE_ACCESS_GRANTED']
+    clean_df = df.dropna(subset=required_cols).copy()
 
-    # Calculate intervals
-    part1 = (valid_cycles['REQUESTED to CLOSED'] - valid_cycles['OPEN to REQUESTED']).dt.total_seconds()
-    part2 = (valid_cycles['CLOSED to PREPARING'] - valid_cycles['REQUESTED to CLOSED']).dt.total_seconds()
-    part3 = (valid_cycles['PREPARING to SAFE_ACCESS_GRANTED'] - valid_cycles['CLOSED to PREPARING']).dt.total_seconds()
+    # Sort by request time
+    clean_df = clean_df.sort_values('OPEN to REQUESTED').reset_index(drop=True)
 
-    # Replace negative or missing intervals with zero
-    part1 = part1.fillna(0).clip(lower=0)
-    part2 = part2.fillna(0).clip(lower=0)
-    part3 = part3.fillna(0).clip(lower=0)
+    # Compute the duration in seconds for each stage
+    part1 = (clean_df['REQUESTED to CLOSED'] - clean_df['OPEN to REQUESTED']).dt.total_seconds()
+    part2 = (clean_df['CLOSED to PREPARING'] - clean_df['REQUESTED to CLOSED']).dt.total_seconds()
+    part3 = (clean_df['PREPARING to SAFE_ACCESS_GRANTED'] - clean_df['CLOSED to PREPARING']).dt.total_seconds()
 
-    N = len(valid_cycles)
+    N = len(clean_df)
     y_pos = np.arange(N)
 
     plt.figure(figsize=(10, max(4, N//3)))
 
-    plt.barh(y_pos, part1, color='tab:blue', edgecolor='k', label='Requested → "Symbot Gate" Closed')
-    plt.barh(y_pos, part2, left=part1, color='tab:orange', edgecolor='k', label='Closed → Preparing (localization complete)')
-    plt.barh(y_pos, part3, left=part1+part2, color='tab:green', edgecolor='k', label='Preparing → Safe Access Granted (door can open)')
+    plt.barh(y_pos, part1, color='tab:blue', edgecolor='k', label='Requested → Gate Closed')
+    plt.barh(y_pos, part2, left=part1, color='tab:orange', edgecolor='k', label='Gate Closed → Preparing')
+    plt.barh(y_pos, part3, left=part1+part2, color='tab:green', edgecolor='k', label='Preparing → Safe Access Granted')
 
-    plt.yticks(y_pos, valid_cycles['Location'] + ' | ' + valid_cycles['OPEN to REQUESTED'].dt.strftime('%Y-%m-%d %H:%M'))
+    plt.xlim([0, 1200])  # Limit x-axis to 1200 sec
+
+    # Label y-axis as location and request time
+    labels = clean_df['Location'] + ' | ' + clean_df['OPEN to REQUESTED'].dt.strftime('%Y-%m-%d %H:%M')
+    plt.yticks(y_pos, labels)
     plt.xlabel('Seconds')
     plt.title('Time to Safe Access Granted (Stacked per Transition)')
     plt.legend(loc='upper right')
-    plt.tick_params(axis='x', labelsize=10)
     plt.tight_layout()
     plt.savefig(png_out)
     plt.show()
+
+# Usage:
+# plot_access_granted_timeline("YOUR_CSV.csv", "output.png")

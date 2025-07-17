@@ -26,16 +26,46 @@ def run_combined_pipeline(filtered_csv, base='all_logs'):
     histogram_png = f"{base}_histogram.png"
     timeline_png = f"{base}_access_granted_timeline.png"
     
-    reshape_log_to_table(filtered_csv, output_csv=transitions_csv)
-    compute_transition_deltas(transitions_csv, output_csv=deltas_csv)
-    plot_histograms(deltas_csv, png_out=histogram_png)
+    # reshape_log_to_table(filtered_csv, output_csv=transitions_csv)
+    # compute_transition_deltas(transitions_csv, output_csv=deltas_csv)
+    # plot_histograms(deltas_csv, png_out=histogram_png)
     plot_access_granted_timeline(transitions_csv, png_out=timeline_png)
 
 if __name__ == "__main__":
     logfiles = [
-                # 'scpu.log',
-                'scpu-20250710.log'
-                ]
+        'scpu-20250127.log',
+        'scpu-20250128.log',
+        'scpu-20250129.log',
+        'scpu-20250130.log',
+        'scpu-20250131.log',
+        'scpu-20250205.log',
+        'scpu-20250206.log',
+        'scpu-20250207.log',
+        'scpu-20250208.log',
+        'scpu-20250209.log',
+        'scpu-20250210.log',
+        'scpu-20250211.log',
+        'scpu-20250212.log',
+        'scpu-20250213.log',
+        'scpu-20250214.log',
+        'scpu-20250215.log',
+        'scpu-20250216.log',
+        'scpu-20250217.log',
+        'scpu-20250218.log',
+        'scpu-20250219.log',
+        'scpu-20250220.log',
+        'scpu-20250221.log',
+        'scpu-20250222.log',
+        'scpu-20250223.log',
+        'scpu-20250224.log',
+        'scpu-20250225.log',
+        'scpu-20250226.log',
+        'scpu-20250227.log',
+        'scpu-20250228.log',
+        'scpu.log',
+        'scpu-20250710.log'
+    ]
+
     # Prepend 'raw logs/' to each filename
     logfiles = [os.path.join('raw logs', f) for f in logfiles]
 
@@ -44,3 +74,4 @@ if __name__ == "__main__":
     filtered_csv = 'all_logs_filtered.csv'
 
     run_combined_pipeline(filtered_csv, base='all_logs')
+

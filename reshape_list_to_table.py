@@ -1,5 +1,6 @@
 import re
 import pandas as pd
+from dateutil import parser
 
 def reshape_log_to_table(filtered_csv, output_csv='parsed_transitions.csv'):
     # --- Load and Parse ---
@@ -43,7 +44,7 @@ def reshape_log_to_table(filtered_csv, output_csv='parsed_transitions.csv'):
             })
 
     df = pd.DataFrame(entries)
-    df['timestamp'] = pd.to_datetime(df['timestamp'])
+    df['timestamp'] = df['timestamp'].apply(lambda x: parser.parse(x).replace(tzinfo=None))
 
     # --- Main logic: Per-cycle search ---
 

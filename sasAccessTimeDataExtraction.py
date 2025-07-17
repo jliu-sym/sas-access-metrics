@@ -30,6 +30,7 @@ def extract_and_filter_logs(log_files, output_csv='filtered_log_transitionStates
                 if include_pattern.search(line) and not exclude_pattern.search(line_lower):
                     cleaned_line = re.sub(r'(\bbotguardian\d+)\.mservices\.[^\s]+', r'\1', line.strip())
                     filtered_lines.append([cleaned_line])
+        print(f"Filtered log written from {log_file}")
 
     with open(output_csv, 'w', newline='', encoding='utf-8') as f:
         writer = csv.writer(f)
